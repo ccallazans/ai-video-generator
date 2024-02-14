@@ -9,7 +9,6 @@ import (
 
 type GenerateHandlerRequest struct {
 	Message string `json:"message"`
-	Topic   string `json:"topic"`
 }
 
 func GenerateHandler(c echo.Context) error {
@@ -18,11 +17,11 @@ func GenerateHandler(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "bad request")
 	}
 
-	if request.Message == "" || request.Topic == "" {
+	if request.Message == "" {
 		return c.String(http.StatusBadRequest, "message and topic are required fields")
 	}
 
-	video, err := usecases.Generate(request.Message, request.Topic)
+	video, err := usecases.Generate(request.Message)
 	if err != nil {
 		c.Logger().Error(err)
 		return c.String(http.StatusInternalServerError, "failed to generate video")

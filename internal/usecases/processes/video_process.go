@@ -6,17 +6,19 @@ import (
 	"io"
 	"log"
 	"math"
+	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/ccallazans/ai-video-generator/internal/utils"
 )
 
-func VideoProcess(videosBytes *[][]byte, speechBytes *[]byte) (string, error) {
+func VideoProcess(speechBytes *[]byte) (string, error) {
 	log.Println("Starting video process")
 
 	// Generate a temporary directory for storing intermediate files.
@@ -28,21 +30,14 @@ func VideoProcess(videosBytes *[][]byte, speechBytes *[]byte) (string, error) {
 	defer os.RemoveAll(tempDir)
 
 	// Generate temporary files for videos and speech.
-	videosTextFilename, speechFilename, err := generateTemporaryFiles(videosBytes, speechBytes, tempDir)
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-
-	// Merge videos into a single file.
-	mergedVideosFilename, err := mergeVideos(videosTextFilename, tempDir)
+	videoFilename, speechFilename, err := generateTemporaryFiles(speechBytes, tempDir)
 	if err != nil {
 		log.Println(err)
 		return "", err
 	}
 
 	// Add speech to the merged video.
-	videoWithSpeechFilename, err := addSpeechToVideo(mergedVideosFilename, speechFilename, tempDir)
+	videoWithSpeechFilename, err := addSpeechToVideo(videoFilename, speechFilename, tempDir)
 	if err != nil {
 		log.Println(err)
 		return "", err
@@ -79,40 +74,25 @@ func generateTemporaryFolder() (string, error) {
 	return dirName, nil
 }
 
-func generateTemporaryFiles(videosBytes *[][]byte, speechBytes *[]byte, dirName string) (string, string, error) {
+func generateTemporaryFiles(speechBytes *[]byte, dirName string) (string, string, error) {
 	log.Println("Generating temporary files")
 
-	var videoFilenames []string
-	for _, videoData := range *videosBytes {
-		videoFile, err := os.CreateTemp(dirName, "*.mp4")
-		if err != nil {
-			log.Fatalf("Error creating temporary video file: %v", err)
-			return "", "", err
-		}
-		defer videoFile.Close()
+	folderPath := "./resources/videos"
 
-		if _, err := videoFile.Write(videoData); err != nil {
-			log.Fatalf("Error writing video data to temporary file: %v", err)
-			return "", "", err
-		}
-
-		newName := strings.Split(videoFile.Name(), ".mp4")[0] + "crop.mp4"
-		args := []string{
-			"-i", videoFile.Name(),
-			"-vf", "crop=720:1280:in_w/2-360:in_h/2-640",
-			"-c:a", "copy",
-			newName,
-		}
-
-		cmd := exec.Command("ffmpeg", args...)
-		_, err = cmd.CombinedOutput()
-		if err != nil {
-			log.Println(err)
-			return "", "", err
-		}
-
-		videoFilenames = append(videoFilenames, newName)
+	fileNames, err := os.ReadDir(folderPath)
+	if err != nil {
+		log.Println("Error reading directory:", err)
+		return "", "", err
 	}
+
+	if len(fileNames) == 0 {
+		log.Println("No files found in the directory")
+		return "", "", err
+	}
+
+	randomIndex := rand.Intn(len(fileNames))
+	videoName := fileNames[randomIndex].Name()
+	videoPath := filepath.Join(folderPath, videoName)
 
 	speechFile, err := os.CreateTemp(dirName, "*.mp3")
 	if err != nil {
@@ -126,48 +106,7 @@ func generateTemporaryFiles(videosBytes *[][]byte, speechBytes *[]byte, dirName 
 		return "", "", err
 	}
 
-	textFile, err := os.CreateTemp(dirName, "*.txt")
-	if err != nil {
-		log.Fatalf("Error creating temporary text file: %v", err)
-		return "", "", err
-	}
-	defer textFile.Close()
-
-	textData := ""
-	for _, vid := range videoFilenames {
-		textData += fmt.Sprintf("file %s\n", vid)
-	}
-
-	if _, err := textFile.Write([]byte(textData)); err != nil {
-		log.Fatalf("Error writing text data to temporary file: %v", err)
-		return "", "", err
-	}
-
-	return textFile.Name(), speechFile.Name(), nil
-}
-
-func mergeVideos(file string, dirName string) (string, error) {
-	log.Println("Merging videos")
-
-	mergedFile := fmt.Sprintf("%s/%s.mp4", dirName, utils.RandomString())
-
-	args := []string{
-		"-f", "concat",
-		"-safe", "0",
-		// "-map", "0:v",
-		"-i", file,
-		"-c", "copy",
-		mergedFile,
-	}
-
-	cmd := exec.Command("ffmpeg", args...)
-	_, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-
-	return mergedFile, nil
+	return videoPath, speechFile.Name(), nil
 }
 
 func addSpeechToVideo(mergedVideoFile string, speechFile string, dirName string) (string, error) {
@@ -239,7 +178,7 @@ func cropVideoDuration(video string, duration string, dirName string) (string, e
 		"-t", duration,
 		finalVideo,
 	}
-	log.Println(args)
+
 	cmd := exec.Command("ffmpeg", args...)
 	_, err := cmd.CombinedOutput()
 
@@ -252,7 +191,8 @@ func cropVideoDuration(video string, duration string, dirName string) (string, e
 }
 
 func uploadFile(filePath string) (string, error) {
-	// Open the file
+	log.Println("Adding subtitles")
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", err
@@ -284,7 +224,8 @@ func uploadFile(filePath string) (string, error) {
 	writer.Close()
 
 	// Create the request
-	req, err := http.NewRequest("POST", "http://127.0.0.1:5000/add-subtitle", body)
+	addSubtitlesAPI := os.Getenv("ADD_SUBTITLES_API")
+	req, err := http.NewRequest("POST", addSubtitlesAPI, body)
 	if err != nil {
 		return "", err
 	}

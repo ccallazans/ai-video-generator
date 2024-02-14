@@ -6,7 +6,7 @@ import (
 	"github.com/ccallazans/ai-video-generator/internal/usecases/processes"
 )
 
-func Generate(message string, topic string) (string, error) {
+func Generate(message string) (string, error) {
 
 	generatedText, err := processes.TextProcess(message)
 	if err != nil {
@@ -20,13 +20,7 @@ func Generate(message string, topic string) (string, error) {
 		return "", err
 	}
 
-	downloadedVideos, err := processes.DownloadVideos(topic)
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-
-	videos, err := processes.VideoProcess(downloadedVideos, generatedSpeech)
+	videos, err := processes.VideoProcess(generatedSpeech)
 	if err != nil {
 		log.Println(err)
 		return "", err
