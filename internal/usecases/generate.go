@@ -2,29 +2,52 @@ package usecases
 
 import (
 	"log"
+	"os"
+	"os/exec"
 
-	"github.com/ccallazans/ai-video-generator/internal/usecases/processes"
+	"github.com/ccallazans/ai-video-generator/internal/processes"
 )
 
 func Generate(message string) (string, error) {
 
-	generatedText, err := processes.TextProcess(message)
+	initPythonEnvironment()
+
+	tempDir, err := os.MkdirTemp("", "ai-video-generator")
 	if err != nil {
-		log.Println(err)
+		log.Println("Failed to create temporary directory: ", err.Error())
+		return "", err
+	}
+	defer os.RemoveAll(tempDir)
+
+	textProcess := processes.NewLocalTextGeneration()
+	generatedText, err := textProcess.Execute(message)
+	if err != nil {
 		return "", err
 	}
 
-	generatedSpeech, err := processes.SpeechProcess(generatedText)
+	speechProcess := processes.NewLocalSpeechGeneration(tempDir)
+	speechFilename, err := speechProcess.Execute(generatedText)
 	if err != nil {
-		log.Println(err)
 		return "", err
 	}
 
-	videos, err := processes.VideoProcess(generatedSpeech)
+	videoProcess := processes.NewLocalVideoGeneration(tempDir, speechFilename)
+	finalVideo, err := videoProcess.Execute("")
 	if err != nil {
-		log.Println(err)
 		return "", err
 	}
 
-	return videos, nil
+	return finalVideo, nil
+}
+
+func initPythonEnvironment() error {
+	cmd := exec.Command("bash", "-c", "source venv/bin/activate")
+	otp, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println("Error initializing python environment")
+		log.Println(string(otp))
+		return err
+	}
+
+	return nil
 }
