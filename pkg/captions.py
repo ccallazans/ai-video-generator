@@ -6,17 +6,21 @@ import os
 import speech_recognition as sr
 import textwrap
 
-def parse_video(video_path, name, temp_folder):
+def parse_video(video_path, final_video_name):
     logging.basicConfig(level = logging.INFO)
     logging.info('Starting parse_video')
-    output_path = os.path.join(temp_folder, name)
-    generate_subtitles(video_path, output_path, temp_folder, name)
+
+    tmp_folder = os.path.dirname(video_path)
+    output_path = os.path.join(tmp_folder, final_video_name)
+
+    generate_subtitles(video_path, output_path, final_video_name, tmp_folder)
     return output_path
 
-def generate_subtitles(video_path, output_path, temp_folder, name):
+def generate_subtitles(video_path, output_path, final_video_name, tmp_folder):
     logging.info('Starting generate_subtitles')
     try:
-        audio_path = f"{temp_folder}/temp_audio_{name}.wav"
+        audio_path = os.path.join(tmp_folder, f"tmp_audio_{final_video_name}.wav")
+
         extract_audio(video_path, audio_path)
         subtitle_text = transcribe_audio(audio_path)
         generate_srt(subtitle_text, output_path)
@@ -89,11 +93,11 @@ def chunk_text(text, max_length):
     
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 3:
         print("Usage: python main.py <parameter>")
         sys.exit(1)
 
-    video_to_process_path = temp_folder = sys.argv[1]
-    final_video_path = sys.argv[2]
-    temp_folder = sys.argv[3]
-    parse_video(video_to_process_path, final_video_path, temp_folder)
+    video_to_process_path = sys.argv[1]
+    final_video_name = sys.argv[2]
+
+    parse_video(video_to_process_path, final_video_name)

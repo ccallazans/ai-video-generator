@@ -14,21 +14,16 @@ RUN apt-get update && apt-get install -y \
 RUN python3 -m venv /venv
 ENV PATH="/venv/bin:$PATH"
 
-COPY requirements.txt .
+COPY pkg/ pkg/
 RUN pip install --upgrade wheel
-RUN pip install -r requirements.txt
-
-COPY libmagick-config.txt .
-RUN cat libmagick-config.txt > /etc/ImageMagick-6/policy.xml
+RUN pip install -r pkg/requirements.txt
+RUN cat pkg/libmagick-config.txt > /etc/ImageMagick-6/policy.xml
 
 COPY build/binapp /app/bin/binapp
-
 COPY .env .
-COPY pkg/ pkg/
-COPY resources/ resources/
-COPY generated/ generated/
 
-ADD ./generated /app/generated
+COPY resources/ resources/
+COPY ./generated generated/
 
 EXPOSE 1323
 
