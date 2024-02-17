@@ -22,5 +22,4 @@ go.work
 
 # Folders
 generated/
-venv/
 build/

@@ -46,28 +46,31 @@ func (p *LocalVideoGeneration) generateVideo(message string) (string, error) {
 		return "", err
 	}
 
-	// Get the duration of the speech file.
 	speechDuration, err := getSpeechTimeDuration(p.speechFilename)
 	if err != nil {
 		log.Println(err)
 		return "", err
 	}
 
-	// Crop the video to match the duration of the speech.
 	video, err := cropVideoDuration(videoWithSpeechFilename, speechDuration, p.tempFolder)
 	if err != nil {
 		log.Println(err)
 		return "", err
 	}
 
-	exportedVideo, err := addVideoSubtitles(video, p.tempFolder)
+	captionsVideo, err := addVideoSubtitles(video, p.tempFolder)
 	if err != nil {
 		log.Println(err)
 		return "", err
 	}
 
-	return exportedVideo, nil
+	finalVideo, err := exportMp4(captionsVideo)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
 
+	return finalVideo, nil
 }
 
 func selectBackgroundVideo() (string, error) {
@@ -179,13 +182,11 @@ func addVideoSubtitles(filePath string, tempDir string) (string, error) {
 	log.Println("Adding subtitles")
 
 	filename := fmt.Sprintf("%s.mp4", utils.RandomString())
-	exportDir := "./generated"
 
 	args := []string{
 		"./pkg/captions.py",
 		filePath,
 		filename,
-		exportDir,
 	}
 
 	cmd := exec.Command("python", args...)
@@ -195,5 +196,28 @@ func addVideoSubtitles(filePath string, tempDir string) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("%s/%s", exportDir, filename), nil
+	return fmt.Sprintf("%s/%s", tempDir, filename), nil
+}
+
+func exportMp4(filePath string) (string, error) {
+	log.Println("Exporting to mp4")
+
+	finalVideoPath := fmt.Sprintf("./generated/%s.mp4", utils.RandomString())
+
+	args := []string{
+		"-i",
+		filePath,
+		"-codec",
+		"copy",
+		finalVideoPath,
+	}
+
+	cmd := exec.Command("ffmpeg", args...)
+	_, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println("Error exporting video to mp4: ", err)
+		return "", err
+	}
+
+	return finalVideoPath, nil
 }

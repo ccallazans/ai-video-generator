@@ -3,21 +3,18 @@ package usecases
 import (
 	"log"
 	"os"
-	"os/exec"
 
 	"github.com/ccallazans/ai-video-generator/internal/generation/processes"
 )
 
 func Generate(message string) (string, error) {
 
-	// initPythonEnvironment() // For debug
-
 	tempDir, err := os.MkdirTemp("", "ai-video-generator")
 	if err != nil {
 		log.Println("Failed to create temporary directory: ", err.Error())
 		return "", err
 	}
-	defer os.RemoveAll(tempDir)
+	// defer os.RemoveAll(tempDir)
 
 	textProcess := processes.NewLocalTextGeneration()
 	generatedText, err := textProcess.Execute(message)
@@ -38,16 +35,4 @@ func Generate(message string) (string, error) {
 	}
 
 	return finalVideo, nil
-}
-
-func initPythonEnvironment() error {
-	cmd := exec.Command("bash", "-c", "source venv/bin/activate")
-	otp, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Println("Error initializing python environment")
-		log.Println(string(otp))
-		return err
-	}
-
-	return nil
 }

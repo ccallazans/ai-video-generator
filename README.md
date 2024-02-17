@@ -8,7 +8,7 @@ This project utilizes Ollama LLM to create videos text ideas based on user promp
 2. **Story Generation**: AI generates a story based on the provided prompt.
 3. **Audio Generation**: The story is converted into audio using AI text-to-speech technology.
 4. **Caption Generation**: AI generates captions from the audio.
-5. **Video Creation**: Captions are merged into a video, creating a visual representation of the generated story.
+5. **Video Creation**: Captions are merged into a video.
 
 ## How to Run
 
