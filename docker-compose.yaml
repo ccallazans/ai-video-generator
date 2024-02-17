@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports: ["11434:11434"]
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - net
+
+  app:
+    container_name: app
+    build: .
+    ports:
+      - "1323:1323"
+    volumes:
+      - ./generated:/app/generated
+    networks:
+      - net
+
+volumes:
+  ollama_data:
+    driver: local
+  app_data:
+    driver: local
+
+networks:
+  net:
+    driver: bridge

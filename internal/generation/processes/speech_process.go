@@ -17,7 +17,7 @@ func NewLocalSpeechGeneration(tempFolder string) SpeechProcess {
 }
 
 func (p *LocalSpeechGeneration) Execute(command string) (string, error) {
-	log.Println("Starting speech process")
+	log.Println("1 Starting speech process")
 
 	result, err := p.generateSpeech(command)
 	if err != nil {

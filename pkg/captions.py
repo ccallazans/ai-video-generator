@@ -9,8 +9,7 @@ import textwrap
 def parse_video(video_path, name, temp_folder):
     logging.basicConfig(level = logging.INFO)
     logging.info('Starting parse_video')
-    temp_name = f"subtitled_video{name}.mp4"
-    output_path = os.path.join(temp_folder, temp_name)
+    output_path = os.path.join(temp_folder, name)
     generate_subtitles(video_path, output_path, temp_folder, name)
     return output_path
 
@@ -52,8 +51,8 @@ def transcribe_audio(audio_path):
 
 def generate_srt(subtitle_text: str, output_srt_path: str) -> None:
     logging.info('Starting generate_srt')
-    chunks = chunk_text(subtitle_text, 32)
-    time_interval = 1.82
+    chunks = chunk_text(subtitle_text, 40)
+    time_interval = 2.48 # Higher is slower
     srt_content = ''
     for i, chunk in enumerate(chunks):
         start_time = i * time_interval
@@ -74,7 +73,7 @@ def _create_text_generator(video):
     stroke_width = 5
     return lambda txt: mp.TextClip(
         '\n'.join(textwrap.fill(line, width=max_chars_per_line) for line in txt.split('\n')),
-        font=font_path, fontsize=fontsize, color=color, stroke_color=stroke_color, stroke_width=5
+        font=font_path, fontsize=fontsize, color=color, stroke_color=stroke_color, stroke_width=stroke_width
     )
 
 def chunk_text(text, max_length):

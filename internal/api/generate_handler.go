@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/ccallazans/ai-video-generator/internal/usecases"
+	"github.com/ccallazans/ai-video-generator/internal/generation/usecases"
 	"github.com/labstack/echo/v4"
 )
 

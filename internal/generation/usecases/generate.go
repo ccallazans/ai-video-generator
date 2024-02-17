@@ -5,12 +5,12 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/ccallazans/ai-video-generator/internal/processes"
+	"github.com/ccallazans/ai-video-generator/internal/generation/processes"
 )
 
 func Generate(message string) (string, error) {
 
-	initPythonEnvironment()
+	// initPythonEnvironment() // For debug
 
 	tempDir, err := os.MkdirTemp("", "ai-video-generator")
 	if err != nil {

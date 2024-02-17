@@ -19,6 +19,8 @@
 
 # Go workspace file
 go.work
-.env
+
+# Folders
 generated/
-venv
+venv/
+build/

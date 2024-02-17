@@ -1,8 +1,9 @@
 import sys
-import ollama
+from ollama import Client
 
 def generate_text(message):
-    response = ollama.chat(model='orca-mini', messages=[{'role': 'user', 'content': message}])
+    client = Client(host='ollama:11434')
+    response = client.chat(model='orca-mini', messages=[{'role': 'user', 'content': message}])
     print(response['message']['content'], flush=True)
  
 if __name__ == "__main__":
