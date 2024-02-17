@@ -1,0 +1,6 @@
+requests
+pygobject
+ollama
+moviepy
+SpeechRecognition
+playsound
