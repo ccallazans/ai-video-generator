@@ -148,6 +148,11 @@ func getSpeechTimeDuration(speechFilename string) (string, error) {
 		return "", err
 	}
 
+	if durationSeconds > 180 {
+		log.Println("Audio duration is bigger than 180s. Duration: ", durationSeconds)
+		return "", fmt.Errorf("audio duration is bigger than 180s. Duration: %f", durationSeconds)
+	}
+
 	hours := int(math.Floor(durationSeconds / 3600))
 	minutes := int(math.Floor((durationSeconds - float64(hours)*3600) / 60))
 	remainingSeconds := durationSeconds - float64(hours)*3600 - float64(minutes)*60
@@ -207,8 +212,10 @@ func exportMp4(filePath string) (string, error) {
 	args := []string{
 		"-i",
 		filePath,
-		"-codec",
-		"copy",
+		"-pix_fmt",
+		"yuv420p",
+		"-crf",
+		"18",
 		finalVideoPath,
 	}
 

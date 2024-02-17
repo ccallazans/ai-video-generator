@@ -27,7 +27,5 @@ func GenerateHandler(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "failed to generate video")
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"video": video,
-	})
+	return c.JSON(http.StatusOK, video)
 }
