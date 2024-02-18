@@ -1,9 +1,11 @@
 package processes
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
 	"log"
-	"os/exec"
-	"strings"
+	"net/http"
 )
 
 type LocalTextGeneration struct{}
@@ -25,20 +27,48 @@ func (p *LocalTextGeneration) Execute(command string) (string, error) {
 
 func (p *LocalTextGeneration) generateText(message string) (string, error) {
 
-	args := []string{
-		"./pkg/llm.py",
-		message,
+	requestData := request{
+		Model:  "llama2",
+		Prompt: message,
+		Stream: false,
 	}
 
-	cmd := exec.Command("python", args...)
-	cmdOutput, err := cmd.CombinedOutput()
+	requestDataBytes, err := json.Marshal(requestData)
 	if err != nil {
-		log.Println("Error executing script local text generation: ", err)
+		log.Println("Error marshalling request data:", err)
 		return "", err
 	}
 
-	response := string(cmdOutput)
-	response = strings.ReplaceAll(response, "\n\n", "")
+	url := "http://ollama:11434/api/generate"
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(requestDataBytes))
+	if err != nil {
+		log.Println("Error sending request:", err)
+		return "", err
+	}
+	defer resp.Body.Close()
 
-	return response, nil
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("Error reading response body:", err)
+		return "", err
+	}
+
+	var responseData response
+	err = json.Unmarshal(responseBody, &responseData)
+	if err != nil {
+		log.Println("Error parsing response JSON:", err)
+		return "", err
+	}
+
+	return responseData.Response, nil
+}
+
+type request struct {
+	Model  string `json:"model"`
+	Prompt string `json:"prompt"`
+	Stream bool   `json:"stream"`
+}
+
+type response struct {
+	Response string `json:"response"`
 }

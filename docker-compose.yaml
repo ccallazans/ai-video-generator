@@ -16,12 +16,15 @@ services:
     ports:
       - "1323:1323"
     volumes:
+      - language_models:/root/.local/share/tts
       - ./generated:/app/generated
     networks:
       - net
 
 volumes:
   ollama_data:
+    driver: local
+  language_models:
     driver: local
   app_data:
     driver: local

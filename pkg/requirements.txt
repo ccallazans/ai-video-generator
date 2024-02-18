@@ -1,6 +1,4 @@
-requests
+TTS
 pygobject
-ollama
 moviepy
 SpeechRecognition
-playsound

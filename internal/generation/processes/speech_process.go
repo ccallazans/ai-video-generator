@@ -28,15 +28,20 @@ func (p *LocalSpeechGeneration) Execute(command string) (string, error) {
 }
 
 func (p *LocalSpeechGeneration) generateSpeech(message string) (string, error) {
-	filename := fmt.Sprintf("%s/%s.mp3", p.tempFolder, utils.RandomString())
+	filename := fmt.Sprintf("%s/%s.wav", p.tempFolder, utils.RandomString())
 
 	args := []string{
-		"./pkg/tiktokvoice.py",
+		"--text",
 		message,
+		"--model_name",
+		"tts_models/en/vctk/vits",
+		"--out_path",
 		filename,
+		"--speaker_idx",
+		"p266",
 	}
 
-	cmd := exec.Command("python", args...)
+	cmd := exec.Command("tts", args...)
 	_, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Println("Error executing script local speech generation: ", err)

@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y \
     libgirepository1.0-dev \
     imagemagick \
     libmagick++-dev \
-    ffmpeg
+    ffmpeg \
+    espeak
 
 RUN python3 -m venv /venv
 ENV PATH="/venv/bin:$PATH"

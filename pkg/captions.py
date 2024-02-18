@@ -56,7 +56,7 @@ def transcribe_audio(audio_path):
 def generate_srt(subtitle_text: str, output_srt_path: str) -> None:
     logging.info('Starting generate_srt')
     chunks = chunk_text(subtitle_text, 40)
-    time_interval = 2.48 # Higher is slower
+    time_interval = 1.9 # Higher is slower
     srt_content = ''
     for i, chunk in enumerate(chunks):
         start_time = i * time_interval
