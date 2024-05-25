@@ -5,17 +5,14 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func NewApi() *echo.Echo {
+func NewRouter() *echo.Echo {
 	e := echo.New()
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	setupV1Routes(e.Group("/api/v1"))
+	v1 := e.Group("/api/v1")
+	v1.POST("/generate", GenerateHandler)
 
 	return e
-}
-
-func setupV1Routes(v1 *echo.Group) {
-	v1.POST("/generate", GenerateHandler)
 }

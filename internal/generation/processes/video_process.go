@@ -1,6 +1,7 @@
 package processes
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -14,33 +15,49 @@ import (
 	"github.com/ccallazans/ai-video-generator/internal/utils"
 )
 
-type LocalVideoGeneration struct {
-	tempFolder     string
+const BG_VIDEO_PATH = "./resources/videos"
+
+type VideoGenerationProcess struct {
+	next           Process
+	tempDir        string
 	speechFilename string
 }
 
-func NewLocalVideoGeneration(tempFolder string, speechFilename string) VideoProcess {
-	return &LocalVideoGeneration{tempFolder: tempFolder, speechFilename: speechFilename}
+func NewVideoGenerationProcess(tempDir string) *VideoGenerationProcess {
+	return &VideoGenerationProcess{tempDir: tempDir}
 }
 
-func (p *LocalVideoGeneration) Execute(command string) (string, error) {
-	log.Println("Starting video process")
-
-	result, err := p.generateVideo(command)
-	if err != nil {
-		return "", err
+func (p *VideoGenerationProcess) Execute(request interface{}) (interface{}, error) {
+	speechFilename, ok := request.(string)
+	if !ok {
+		return nil, errors.New("invalid request type")
 	}
 
-	return result, nil
+	p.speechFilename = speechFilename
+
+	finalVideo, err := p.generateVideo()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.next != nil {
+		return p.next.Execute(finalVideo)
+	}
+
+	return finalVideo, nil
 }
 
-func (p *LocalVideoGeneration) generateVideo(message string) (string, error) {
+func (p *VideoGenerationProcess) SetNext(handler Process) {
+	p.next = handler
+}
+
+func (p *VideoGenerationProcess) generateVideo() (string, error) {
 	bgVideo, err := selectBackgroundVideo()
 	if err != nil {
 		return "", err
 	}
 
-	videoWithSpeechFilename, err := addSpeechToVideo(bgVideo, p.speechFilename, p.tempFolder)
+	videoWithSpeechFilename, err := addSpeechToVideo(bgVideo, p.speechFilename, p.tempDir)
 	if err != nil {
 		log.Println(err)
 		return "", err
@@ -52,13 +69,13 @@ func (p *LocalVideoGeneration) generateVideo(message string) (string, error) {
 		return "", err
 	}
 
-	video, err := cropVideoDuration(videoWithSpeechFilename, speechDuration, p.tempFolder)
+	video, err := cropVideoDuration(videoWithSpeechFilename, speechDuration, p.tempDir)
 	if err != nil {
 		log.Println(err)
 		return "", err
 	}
 
-	captionsVideo, err := addVideoSubtitles(video, p.tempFolder)
+	captionsVideo, err := addVideoSubtitles(video, p.tempDir)
 	if err != nil {
 		log.Println(err)
 		return "", err
@@ -76,9 +93,7 @@ func (p *LocalVideoGeneration) generateVideo(message string) (string, error) {
 func selectBackgroundVideo() (string, error) {
 	log.Println("Selecting background video")
 
-	bgVideoPath := "./resources/videos"
-
-	bgVideos, err := os.ReadDir(bgVideoPath)
+	bgVideos, err := os.ReadDir(BG_VIDEO_PATH)
 	if err != nil {
 		log.Println("Error reading background videos directory:", err)
 		return "", err
@@ -92,7 +107,7 @@ func selectBackgroundVideo() (string, error) {
 	randomIndex := rand.Intn(len(bgVideos))
 
 	bgFilename := bgVideos[randomIndex].Name()
-	bgPath := filepath.Join(bgVideoPath, bgFilename)
+	bgPath := filepath.Join(BG_VIDEO_PATH, bgFilename)
 
 	return bgPath, nil
 }

@@ -28,7 +28,7 @@ make build
 ```
 3. Start the Docker containers:
 ```
-sudo docker-compose up -d && sudo docker exec -it $(sudo docker ps -aqf "name=ollama") ollama pull orca-mini
+sudo docker compose up -d && sudo docker exec -it $(sudo docker ps -aqf "name=ollama") ollama pull orca-mini
 ```
 
 Once the containers are up and running, you can access the AI video story generator through its provided interface or API endpoints.

@@ -18,7 +18,7 @@ func main() {
 		log.Fatal("Error loading .env file:", err)
 	}
 
-	server := api.NewApi()
+	server := api.NewRouter()
 
 	go func() {
 		if err := server.Start(":1323"); err != nil {

@@ -1,29 +1,43 @@
 package processes
 
 import (
+	"errors"
 	"log"
 	"os/exec"
 	"strings"
 )
 
-type LocalTextGeneration struct{}
-
-func NewLocalTextGeneration() TextProcess {
-	return &LocalTextGeneration{}
+type TextGenerationProcess struct {
+	next Process
 }
 
-func (p *LocalTextGeneration) Execute(command string) (string, error) {
-	log.Println("Starting text process")
+func NewTextGenerationProcess() *TextGenerationProcess {
+	return &TextGenerationProcess{}
+}
 
-	result, err := p.generateText(command)
-	if err != nil {
-		return "", err
+func (p *TextGenerationProcess) Execute(request interface{}) (interface{}, error) {
+	message, ok := request.(string)
+	if !ok {
+		return nil, errors.New("invalid request type")
 	}
 
-	return result, nil
+	generatedText, err := p.generateText(message)
+	if err != nil {
+		return nil, err
+	}
+
+	if p.next != nil {
+		return p.next.Execute(generatedText)
+	}
+
+	return generatedText, nil
 }
 
-func (p *LocalTextGeneration) generateText(message string) (string, error) {
+func (p *TextGenerationProcess) SetNext(handler Process) {
+	p.next = handler
+}
+
+func (p *TextGenerationProcess) generateText(message string) (string, error) {
 
 	args := []string{
 		"./pkg/llm.py",

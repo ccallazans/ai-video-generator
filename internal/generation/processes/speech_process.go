@@ -1,6 +1,7 @@
 package processes
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os/exec"
@@ -8,27 +9,39 @@ import (
 	"github.com/ccallazans/ai-video-generator/internal/utils"
 )
 
-type LocalSpeechGeneration struct {
-	tempFolder string
+type SpeechGenerationProcess struct {
+	next    Process
+	tempDir string
 }
 
-func NewLocalSpeechGeneration(tempFolder string) SpeechProcess {
-	return &LocalSpeechGeneration{tempFolder: tempFolder}
+func NewSpeechGenerationProcess(tempDir string) *SpeechGenerationProcess {
+	return &SpeechGenerationProcess{tempDir: tempDir}
 }
 
-func (p *LocalSpeechGeneration) Execute(command string) (string, error) {
-	log.Println("1 Starting speech process")
-
-	result, err := p.generateSpeech(command)
-	if err != nil {
-		return "", err
+func (p *SpeechGenerationProcess) Execute(request interface{}) (interface{}, error) {
+	generatedText, ok := request.(string)
+	if !ok {
+		return nil, errors.New("invalid request type")
 	}
 
-	return result, nil
+	speechFilename, err := p.generateSpeech(generatedText)
+	if err != nil {
+		return nil, err
+	}
+
+	if p.next != nil {
+		return p.next.Execute(speechFilename)
+	}
+
+	return speechFilename, nil
 }
 
-func (p *LocalSpeechGeneration) generateSpeech(message string) (string, error) {
-	filename := fmt.Sprintf("%s/%s.mp3", p.tempFolder, utils.RandomString())
+func (p *SpeechGenerationProcess) SetNext(handler Process) {
+	p.next = handler
+}
+
+func (p *SpeechGenerationProcess) generateSpeech(message string) (string, error) {
+	filename := fmt.Sprintf("%s/%s.mp3", p.tempDir, utils.RandomString())
 
 	args := []string{
 		"./pkg/tiktokvoice.py",
