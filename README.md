@@ -19,8 +19,8 @@ This project utilizes Ollama LLM to create videos text ideas based on user promp
 ### Installation
 1. Clone the repository:
 ```
-git clone https://github.com/ccallazans/ai-video-story-generator.git
-cd ai-video-story-generator
+git clone https://github.com/ccallazans/ai-video-generator.git
+cd ai-video-generator
 ```
 2. Build the project:
 ```
