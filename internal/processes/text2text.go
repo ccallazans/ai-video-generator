@@ -16,21 +16,22 @@ func NewTextGenerationProcess() *TextGenerationProcess {
 }
 
 func (p *TextGenerationProcess) Execute(request interface{}) (interface{}, error) {
-	message, ok := request.(string)
+	context, ok := request.(*GenerationContext)
 	if !ok {
 		return nil, errors.New("invalid request type")
 	}
 
-	generatedText, err := p.generateText(message)
+	generatedText, err := p.generateText(context.Prompt)
 	if err != nil {
 		return nil, err
 	}
+	context.Text = generatedText
 
 	if p.next != nil {
-		return p.next.Execute(generatedText)
+		return p.next.Execute(context)
 	}
 
-	return generatedText, nil
+	return context.Text, nil
 }
 
 func (p *TextGenerationProcess) SetNext(handler Process) {

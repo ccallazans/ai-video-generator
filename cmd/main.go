@@ -1,41 +1,17 @@
 package main
 
 import (
-	"context"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+	"fmt"
 
-	"github.com/ccallazans/ai-video-generator/internal/api"
-	"github.com/joho/godotenv"
+	"github.com/ccallazans/ai-video-generator/internal/server"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
-	err := godotenv.Load()
+	server := server.NewServer()
+
+	err := server.ListenAndServe()
 	if err != nil {
-		log.Fatal("Error loading .env file:", err)
-	}
-
-	server := api.NewRouter()
-
-	go func() {
-		if err := server.Start(":1323"); err != nil {
-			log.Fatal("Error starting server:", err)
-		}
-	}()
-
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(ctx); err != nil {
-		log.Println("Error shutting down server:", err)
-	} else {
-		log.Println("Server stopped gracefully")
+		panic(fmt.Sprintf("cannot start server: %s", err))
 	}
 }

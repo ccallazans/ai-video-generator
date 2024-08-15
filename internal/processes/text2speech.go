@@ -6,42 +6,42 @@ import (
 	"log"
 	"os/exec"
 
-	"github.com/ccallazans/ai-video-generator/internal/utils"
+	"github.com/google/uuid"
 )
 
 type SpeechGenerationProcess struct {
-	next    Process
-	tempDir string
+	next Process
 }
 
-func NewSpeechGenerationProcess(tempDir string) *SpeechGenerationProcess {
-	return &SpeechGenerationProcess{tempDir: tempDir}
+func NewSpeechGenerationProcess() *SpeechGenerationProcess {
+	return &SpeechGenerationProcess{}
 }
 
 func (p *SpeechGenerationProcess) Execute(request interface{}) (interface{}, error) {
-	generatedText, ok := request.(string)
+	context, ok := request.(*GenerationContext)
 	if !ok {
 		return nil, errors.New("invalid request type")
 	}
 
-	speechFilename, err := p.generateSpeech(generatedText)
+	speechFilename, err := p.generateSpeech(context.Text, context.TempDir)
 	if err != nil {
 		return nil, err
 	}
+	context.SpeechFile = speechFilename
 
 	if p.next != nil {
-		return p.next.Execute(speechFilename)
+		return p.next.Execute(context)
 	}
 
-	return speechFilename, nil
+	return context.SpeechFile, nil
 }
 
 func (p *SpeechGenerationProcess) SetNext(handler Process) {
 	p.next = handler
 }
 
-func (p *SpeechGenerationProcess) generateSpeech(message string) (string, error) {
-	filename := fmt.Sprintf("%s/%s.mp3", p.tempDir, utils.RandomString())
+func (p *SpeechGenerationProcess) generateSpeech(message, folder string) (string, error) {
+	filename := fmt.Sprintf("%s/%s.mp3", folder, uuid.NewString())
 
 	args := []string{
 		"./pkg/tiktokvoice.py",
