@@ -2,28 +2,34 @@ version: '3.8'
 
 services:
   ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
     ports: ["11434:11434"]
     volumes:
       - ollama_data:/root/.ollama
     networks:
       - net
 
-  app:
-    container_name: app
-    build: .
+  worker:
+    container_name: worker
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
     ports:
-      - "1323:1323"
+      - "8080:8080"
     volumes:
       - ./generated:/app/generated
     networks:
       - net
+    environment:
+    - PORT=8080
+    - ENV=local
+    - OLLAMA_URL=http://ollama:11434/api/generate
+    - OLLAMA_MODEL=orca-mini
 
 volumes:
   ollama_data:
-    driver: local
-  app_data:
     driver: local
 
 networks:

@@ -5,10 +5,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/ccallazans/ai-video-generator/internal/generation/processes"
+	"github.com/ccallazans/ai-video-generator/internal/processes"
 )
 
-func Generate(message string) (string, error) {
+func Generate(prompt string) (string, error) {
 	tempDir, err := os.MkdirTemp("", "ai-video-generator")
 	if err != nil {
 		log.Println("Failed to create temporary directory: ", err.Error())
@@ -16,14 +16,20 @@ func Generate(message string) (string, error) {
 	}
 	defer os.RemoveAll(tempDir)
 
+	context := &processes.GenerationContext{
+		TempDir: tempDir,
+		Prompt:  prompt,
+	}
+
 	textProcess := processes.NewTextGenerationProcess()
-	speechProcess := processes.NewSpeechGenerationProcess(tempDir)
-	videoProcess := processes.NewVideoGenerationProcess(tempDir)
+	speechProcess := processes.NewSpeechGenerationProcess()
+	videoProcess := processes.NewVideoGenerationProcess()
 
 	textProcess.SetNext(speechProcess)
 	speechProcess.SetNext(videoProcess)
 
-	result, err := textProcess.Execute(message)
+	// Execute the pipeline
+	result, err := textProcess.Execute(context)
 	if err != nil {
 		return "", err
 	}
