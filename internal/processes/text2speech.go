@@ -2,9 +2,9 @@ package processes
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/google/uuid"
 )
@@ -40,19 +40,20 @@ func (p *SpeechGenerationProcess) SetNext(handler Process) {
 	p.next = handler
 }
 
-func (p *SpeechGenerationProcess) generateSpeech(message, folder string) (string, error) {
-	filename := fmt.Sprintf("%s/%s.mp3", folder, uuid.NewString())
+func (p *SpeechGenerationProcess) generateSpeech(text, folder string) (string, error) {
+	filename := filepath.Join(folder, uuid.NewString()+".mp3")
 
 	args := []string{
-		"./pkg/tiktokvoice.py",
-		message,
+		"./scripts/tts.py",
+		text,
 		filename,
 	}
 
 	cmd := exec.Command("python", args...)
+
 	_, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Println("Error executing script local speech generation: ", err)
+		log.Println("Erro text2speech: ", args)
 		return "", err
 	}
 

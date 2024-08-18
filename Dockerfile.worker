@@ -1,0 +1,29 @@
+FROM golang:1.22.3-alpine AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN CGO_ENABLED=0 go build -tags netgo -ldflags '-s -w' -o /app/app cmd/main.go
+
+FROM python:3.12.5-slim
+
+WORKDIR /app
+
+COPY scripts scripts
+COPY resources resources
+
+RUN apt-get update && apt-get install --no-install-recommends -y git ffmpeg imagemagick libmagick++-dev ghostscript \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && sed -i 's|<policy domain="path" rights="none" pattern="@\*"/>|<!--<policy domain="path" rights="none" pattern="@*"/> -->|' /etc/ImageMagick-6/policy.xml \
+    && pip install --upgrade pip \
+    && pip install --no-cache-dir -r scripts/requirements.txt
+
+COPY --from=builder /app/app .
+
+EXPOSE 8080
+
+CMD ["./app"]

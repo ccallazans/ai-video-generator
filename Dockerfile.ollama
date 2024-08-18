@@ -1,0 +1,11 @@
+FROM ollama/ollama as builder
+
+COPY ./setup-ollama.sh ./setup-ollama.sh
+
+RUN bash ./setup-ollama.sh
+
+FROM ollama/ollama
+
+COPY --from=builder /root/.ollama /root/.ollama
+
+EXPOSE 11434
