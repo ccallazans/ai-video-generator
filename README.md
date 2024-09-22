@@ -14,6 +14,7 @@ This project utilizes Ollama LLM to create video text ideas based on user prompt
 
 ### Prerequisites
 - Docker installed on your system
+- At least ~5.5GB of RAM to run all applications and llm models
 
 ### Installation
 
