@@ -23,7 +23,7 @@ func (p *SpeechGenerationProcess) Execute(request interface{}) (interface{}, err
 		return nil, errors.New("invalid request type")
 	}
 
-	speechFilename, err := p.generateSpeech(context.Text, context.TempDir)
+	speechFilename, err := p.generateSpeech(context.Text, context.TempDir, context.Voice)
 	if err != nil {
 		return nil, err
 	}
@@ -40,20 +40,22 @@ func (p *SpeechGenerationProcess) SetNext(handler Process) {
 	p.next = handler
 }
 
-func (p *SpeechGenerationProcess) generateSpeech(text, folder string) (string, error) {
+func (p *SpeechGenerationProcess) generateSpeech(text, folder, voice string) (string, error) {
 	filename := filepath.Join(folder, uuid.NewString()+".mp3")
 
 	args := []string{
 		"./scripts/tts.py",
 		text,
 		filename,
+		voice,
 	}
 
 	cmd := exec.Command("python", args...)
 
-	_, err := cmd.CombinedOutput()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Println("Erro text2speech: ", args)
+		log.Println("Error text2speech: ", args)
+		log.Println("Command output: ", string(output))
 		return "", err
 	}
 

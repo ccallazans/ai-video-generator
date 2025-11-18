@@ -8,7 +8,9 @@ import (
 )
 
 type generateRequest struct {
-	Message string `json:"message"`
+	Message     string `json:"message"`
+	AspectRatio string `json:"aspect_ratio"` // "16:9" (default), "9:16", "1:1"
+	Voice       string `json:"voice"`        // Edge TTS voice (e.g., "en-US-AriaNeural", "es-ES-ElviraNeural")
 }
 
 type generateResponse struct {
@@ -26,7 +28,15 @@ func GenerateHandler(c echo.Context) error {
 		return respondWithError(c, http.StatusBadRequest, "Message is a required field")
 	}
 
-	video, err := usecases.Generate(request.Message)
+	// Set defaults
+	if request.AspectRatio == "" {
+		request.AspectRatio = "16:9"
+	}
+	if request.Voice == "" {
+		request.Voice = "en-US-AriaNeural"
+	}
+
+	video, err := usecases.Generate(request.Message, request.AspectRatio, request.Voice)
 	if err != nil {
 		c.Logger().Errorf("Failed to generate video: %v", err)
 		return respondWithError(c, http.StatusInternalServerError, "Failed to generate video")

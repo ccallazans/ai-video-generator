@@ -1,36 +1,28 @@
-from transformers import VitsModel, AutoTokenizer
-import torch
-import scipy.io.wavfile
+import asyncio
+import edge_tts
 import sys
 
-def text_to_speech(text, output_filename):
-    model = VitsModel.from_pretrained("facebook/mms-tts-eng")
-    tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
+# Available voices:
+# English (US): en-US-AriaNeural (female), en-US-GuyNeural (male)
+# Spanish (Spain): es-ES-ElviraNeural (female), es-ES-AlvaroNeural (male)
+# Spanish (Mexico): es-MX-DaliaNeural (female), es-MX-JorgeNeural (male)
+# Portuguese (Brazil): pt-BR-FranciscaNeural (female), pt-BR-AntonioNeural (male)
+# More voices: https://speech.microsoft.com/portal/voicegallery
 
-    inputs = tokenizer(text, return_tensors="pt")
+DEFAULT_VOICE = "es-ES-ElviraNeural"
 
-    with torch.no_grad():
-        output = model(**inputs).waveform
-
-    waveform = output.float().numpy()
-    sampling_rate = model.config.sampling_rate
-
-    if waveform.ndim > 1:
-        waveform = waveform.squeeze()
-
-    if waveform.max() > 1.0 or waveform.min() < -1.0:
-        waveform = waveform / max(abs(waveform.max()), abs(waveform.min()))
-
-    if not (0 < sampling_rate <= 65535):
-        raise ValueError(f"Invalid sampling rate: {sampling_rate}")
-
-    scipy.io.wavfile.write(output_filename, rate=sampling_rate, data=waveform)
-    print("WAV file written successfully to", output_filename)
+async def text_to_speech(text, output_filename, voice=DEFAULT_VOICE):
+    communicate = edge_tts.Communicate(text, voice)
+    await communicate.save(output_filename)
+    print(f"Audio file written successfully to {output_filename} using voice {voice}")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3 or len(sys.argv) > 4:
+        print("Usage: tts.py <text> <output_filename> [voice]")
         sys.exit(1)
-    
+
     text = sys.argv[1]
     output_filename = sys.argv[2]
-    text_to_speech(text, output_filename)
+    voice = sys.argv[3] if len(sys.argv) == 4 else DEFAULT_VOICE
+
+    asyncio.run(text_to_speech(text, output_filename, voice))

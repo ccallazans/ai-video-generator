@@ -8,7 +8,7 @@ import argparse
 import subprocess
 from datetime import timedelta
 import whisper
-from moviepy.editor import VideoFileClip, CompositeVideoClip, TextClip
+from moviepy import VideoFileClip, CompositeVideoClip, TextClip
 from moviepy.video.tools.subtitles import SubtitlesClip
 import string
 import random
@@ -73,20 +73,21 @@ class SubtitleGenerator:
         if os.path.exists(self.srt_path):
             subtitles = SubtitlesClip(
                 self.srt_path,
-                lambda txt: TextClip(
-                    txt,
-                    font="FreeSans-Bold",
-                    fontsize=60,
+                make_textclip=lambda txt: TextClip(
+                    text=txt,
+                    font="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                    font_size=60,
                     color="white",
-                    method='caption',
                     size=(self.videomanager.video.w - 100, None),
-                    align="center"
+                    horizontal_align="center",
+                    stroke_color="black",
+                    stroke_width=2
                 )
             )
 
             video_with_subtitles = CompositeVideoClip([
                 self.videomanager.video,
-                subtitles.set_position(('center', 0.4), relative=True)
+                subtitles.with_position(('center', 0.7), relative=True)
             ])
 
             video_with_subtitles.write_videofile(self.output_vid_path, codec="libx264")

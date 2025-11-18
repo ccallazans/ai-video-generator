@@ -11,4 +11,6 @@ type GenerationContext struct {
 	Text           string
 	SpeechFile     string
 	GeneratedVideo string
+	AspectRatio    string // "16:9", "9:16", "1:1"
+	Voice          string // Edge TTS voice name
 }

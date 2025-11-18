@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	BG_VIDEO_WITH_AUDIO = "background-video-with-audio.mp4"
-	VIDEO_LENGTH_CROP   = "cropped-length-video.mp4"
-	VIDEO_FOLDER        = "./resources/videos"
+	BG_VIDEO_WITH_AUDIO   = "background-video-with-audio.mp4"
+	VIDEO_ASPECT_RATIO    = "aspect-ratio-video.mp4"
+	VIDEO_LENGTH_CROP     = "cropped-length-video.mp4"
+	VIDEO_FOLDER          = "./resources/videos"
 )
 
 type VideoGenerationProcess struct {
@@ -60,7 +61,17 @@ func (p *VideoGenerationProcess) generateVideo(context *GenerationContext) (stri
 		return "", fmt.Errorf("error executing overwriteVideoAudio: %w", err)
 	}
 
-	croppedVideo, err := cropVideoLength(context.TempDir, bgVideoWithAudio, context.SpeechFile)
+	// Crop to aspect ratio if specified
+	videoToProcess := bgVideoWithAudio
+	if context.AspectRatio != "" {
+		aspectRatioVideo, err := cropToAspectRatio(context.TempDir, bgVideoWithAudio, context.AspectRatio)
+		if err != nil {
+			return "", fmt.Errorf("error executing cropToAspectRatio: %w", err)
+		}
+		videoToProcess = aspectRatioVideo
+	}
+
+	croppedVideo, err := cropVideoLength(context.TempDir, videoToProcess, context.SpeechFile)
 	if err != nil {
 		return "", fmt.Errorf("error executing cropVideoLength: %w", err)
 	}
@@ -171,8 +182,10 @@ func runAutocap(videoPath string) (string, error) {
 
 func executeCommand(name string, args []string) error {
 	cmd := exec.Command(name, args...)
-	if _, err := cmd.CombinedOutput(); err != nil {
+	output, err := cmd.CombinedOutput()
+	if err != nil {
 		log.Printf("Error executing command %s: %v", name, err)
+		log.Printf("Command output: %s", string(output))
 		return err
 	}
 	return nil
@@ -196,4 +209,49 @@ func generateRandomWord(length int) string {
 	}
 
 	return string(word)
+}
+
+func cropToAspectRatio(tempDir, videoPath, aspectRatio string) (string, error) {
+	outputVideo := filepath.Join(tempDir, VIDEO_ASPECT_RATIO)
+
+	var width, height int
+	var cropFilter string
+
+	switch aspectRatio {
+	case "16:9":
+		// Standard YouTube horizontal (1920x1080)
+		width, height = 1920, 1080
+		// If aspect < target: scale by width, else scale by height
+		cropFilter = fmt.Sprintf("scale='if(lt(a,16/9),%d,-1)':'if(lt(a,16/9),-1,%d)',crop=%d:%d", width, height, width, height)
+	case "9:16":
+		// Vertical for Shorts/TikTok/Reels (1080x1920)
+		width, height = 1080, 1920
+		cropFilter = fmt.Sprintf("scale='if(lt(a,9/16),%d,-1)':'if(lt(a,9/16),-1,%d)',crop=%d:%d", width, height, width, height)
+	case "1:1":
+		// Square for Instagram (1080x1080)
+		width, height = 1080, 1080
+		cropFilter = fmt.Sprintf("scale='if(lt(a,1),%d,-1)':'if(lt(a,1),-1,%d)',crop=%d:%d", width, height, width, height)
+	case "4:3":
+		// Classic 4:3 (1440x1080)
+		width, height = 1440, 1080
+		cropFilter = fmt.Sprintf("scale='if(lt(a,4/3),%d,-1)':'if(lt(a,4/3),-1,%d)',crop=%d:%d", width, height, width, height)
+	default:
+		// Default to 16:9
+		width, height = 1920, 1080
+		cropFilter = fmt.Sprintf("scale='if(lt(a,16/9),%d,-1)':'if(lt(a,16/9),-1,%d)',crop=%d:%d", width, height, width, height)
+	}
+
+	args := []string{
+		"-i", videoPath,
+		"-vf", cropFilter,
+		"-c:a", "copy",
+		"-y", // Overwrite output file
+		outputVideo,
+	}
+
+	if err := executeCommand("ffmpeg", args); err != nil {
+		return "", fmt.Errorf("error cropping video to aspect ratio %s: %w", aspectRatio, err)
+	}
+
+	return outputVideo, nil
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type TextGenerationProcess struct {
@@ -34,7 +35,11 @@ func (p *TextGenerationProcess) Execute(request interface{}) (interface{}, error
 		return nil, errors.New("invalid request type")
 	}
 
-	generatedText, err := p.generateText(context.Prompt)
+	// Extract language from voice and modify prompt
+	language := getLanguageFromVoice(context.Voice)
+	enhancedPrompt := enhancePromptWithLanguage(context.Prompt, language)
+
+	generatedText, err := p.generateText(enhancedPrompt)
 	if err != nil {
 		return nil, err
 	}
@@ -103,4 +108,58 @@ func makeOllamaRequest(method, url string, payload interface{}, result interface
 	}
 
 	return nil
+}
+
+// getLanguageFromVoice extracts the language name from Edge TTS voice code
+// Examples: "es-ES-ElviraNeural" -> "Spanish", "en-US-AriaNeural" -> "English"
+func getLanguageFromVoice(voice string) string {
+	if voice == "" {
+		return "English"
+	}
+
+	// Extract language code (e.g., "es-ES" from "es-ES-ElviraNeural")
+	parts := strings.Split(voice, "-")
+	if len(parts) < 2 {
+		return "English"
+	}
+
+	languageCode := strings.ToLower(parts[0])
+
+	// Map language codes to full names
+	languageMap := map[string]string{
+		"en": "English",
+		"es": "Spanish",
+		"fr": "French",
+		"de": "German",
+		"it": "Italian",
+		"pt": "Portuguese",
+		"nl": "Dutch",
+		"ru": "Russian",
+		"ja": "Japanese",
+		"ko": "Korean",
+		"zh": "Chinese",
+		"ar": "Arabic",
+		"hi": "Hindi",
+		"tr": "Turkish",
+		"pl": "Polish",
+		"sv": "Swedish",
+		"no": "Norwegian",
+		"da": "Danish",
+		"fi": "Finnish",
+	}
+
+	if language, ok := languageMap[languageCode]; ok {
+		return language
+	}
+
+	return "English"
+}
+
+// enhancePromptWithLanguage adds language instruction to the prompt
+func enhancePromptWithLanguage(prompt string, language string) string {
+	if language == "English" {
+		return prompt
+	}
+
+	return fmt.Sprintf("%s\n\nIMPORTANT: You must respond entirely in %s. Do not use English or any other language.", prompt, language)
 }
